@@ -3,8 +3,11 @@ using AuctionService.DTOs;
 using AuctionService.Entities;
 using AutoMapper;
 using AutoMapper.QueryableExtensions;
+using Contracts;
+using MassTransit;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using RabbitMQ.Client;
 
 namespace AuctionService.Conrtollers;
 
@@ -15,11 +18,13 @@ public class AuctionController : ControllerBase
 {
     private readonly AuctionDbContext _context;
     private readonly IMapper _mapper;
+    private readonly IPublishEndpoint publishEndpoint;
 
-    public AuctionController(AuctionDbContext context, IMapper mapper)
+    public AuctionController(AuctionDbContext context, IMapper mapper, IPublishEndpoint publishEndpoint)
     {
         this._context = context;
         this._mapper = mapper;
+        this.publishEndpoint = publishEndpoint;
     }
 
     [HttpGet]
@@ -49,20 +54,24 @@ public class AuctionController : ControllerBase
         return Ok(_mapper.Map<AuctionDto>(auction));
     }
 
+    [HttpPost]
     public async Task<ActionResult<AuctionDto>> CreateAuction(CreateAuctionDto auctionDto)
     {
         var auction = _mapper.Map<Auction>(auctionDto);
         // TODO: Add current user as seller
         auction.Seller = "test";
         _context.Auctions.Add(auction);
+        var newAuction = _mapper.Map<AuctionDto>(auction);
+        await publishEndpoint.Publish(_mapper.Map<AuctionCreated>(newAuction));
         var result = await _context.SaveChangesAsync() > 0;
         if (!result)
         {
             return BadRequest("Failed to create auction");
         }
+
         return CreatedAtAction(nameof(GetAuctionById),
          new { id = auction.Id },
-          _mapper.Map<AuctionDto>(auction)); // This returns a Created At Action for the client to know where to find the created resource
+          newAuction); // This returns a Created At Action for the client to know where to find the created resource
     }
 
     [HttpPut("{id}")]
@@ -84,6 +93,8 @@ public class AuctionController : ControllerBase
         auction.Item.Mileage = auctionDto.Mileage ?? auction.Item.Mileage;
         auction.Item.Year = auctionDto.Year ?? auction.Item.Year; // ?? operator works here because the properties are nullable, eventhough they are int.
 
+        var auctionUpdated = _mapper.Map<AuctionUpdated>(auction);
+        await publishEndpoint.Publish(auctionUpdated);
         var result = await _context.SaveChangesAsync() > 0;
         if (!result)
         {
@@ -104,6 +115,11 @@ public class AuctionController : ControllerBase
         }
         // TODO: Check if the current user is the seller
         _context.Auctions.Remove(auction);
+        AuctionDeleted auctionDeleted = new()
+        {
+            Id = id.ToString()
+        };
+        await publishEndpoint.Publish(auctionDeleted);
         var result = await _context.SaveChangesAsync() > 0;
         if (!result)
         {
