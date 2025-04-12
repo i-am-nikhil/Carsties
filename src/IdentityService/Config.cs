@@ -31,6 +31,19 @@ public static class Config
                 RedirectUris = {"https://www.getpostman.com/oauth2/callback"},
                 ClientSecrets = new[] {new Secret("NotASecret".Sha256())},
                 AllowedGrantTypes = GrantTypes.ResourceOwnerPassword
+            },
+            new Client
+            {
+                ClientId = "nextApp",
+                ClientName = "nextApp",
+                ClientSecrets = {new Secret("secret".Sha256())},
+                AllowedGrantTypes = GrantTypes.CodeAndClientCredentials, // Access token will be shared across network without involvement of browser.
+                RequirePkce = false, // PKCE is a security measure to prevent code interception attacks. It is used in public clients where the client secret cannot be stored securely.
+                // If we were building a react native app, we would use PKCE to prevent code interception attacks since the client secret cannot be stored securely.
+                RedirectUris = {"http://localhost:3000/api/auth/callback/id-server"},
+                AllowOfflineAccess = true, // This allows the client to request a refresh token.
+                AllowedScopes = {"openid", "profile", "auctionApp"}, // open id and profile are here because they're in IdentityResource[].
+                AccessTokenLifetime = 3600*24*30, // 30 days
             }
         };
 }
