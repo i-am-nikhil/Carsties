@@ -21,6 +21,10 @@ builder.Services.AddMassTransit(x => {
     x.SetEndpointNameFormatter(new KebabCaseEndpointNameFormatter("search", false)); // search will be prefixed to the queue name. This is required in case any other service is consuming the AuctionCreated event
 
     x.UsingRabbitMq((context, cfg) => {
+        cfg.Host(builder.Configuration["RabbitMq:Host"], "/", h => {
+            h.Username(builder.Configuration.GetValue("RabbitMq:Username", "guest"));
+            h.Password(builder.Configuration.GetValue("RabbitMq:Password", "guest"));
+        });
         cfg.ReceiveEndpoint("search-auction-created", e => {
             e.UseMessageRetry(r => r.Interval(5, 5));
             e.ConfigureConsumer<AuctionCreatedConsumer>(context);

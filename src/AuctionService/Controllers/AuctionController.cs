@@ -60,7 +60,6 @@ public class AuctionController : ControllerBase
     public async Task<ActionResult<AuctionDto>> CreateAuction(CreateAuctionDto auctionDto)
     {
         var auction = _mapper.Map<Auction>(auctionDto);
-        // TODO: Add current user as seller
         auction.Seller = User.Identity.Name;
         _context.Auctions.Add(auction);
         var newAuction = _mapper.Map<AuctionDto>(auction);
