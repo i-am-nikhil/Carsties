@@ -38,7 +38,7 @@ public class SearchController : ControllerBase
                 query.Match(item => item.AuctionEnd < DateTime.UtcNow),
             "endingsoon" =>
                 query.Match(item => item.AuctionEnd < DateTime.UtcNow.AddHours(6) && item.AuctionEnd > DateTime.UtcNow),
-            _ => query.Match(item => item.AuctionEnd > DateTime.UtcNow)
+            // _ => query.Match(item => item.AuctionEnd > DateTime.UtcNow)
         };
 
         if (!string.IsNullOrEmpty(searchParams.Seller))
