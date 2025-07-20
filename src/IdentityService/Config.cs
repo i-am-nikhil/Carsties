@@ -44,6 +44,7 @@ public static class Config
                 AllowOfflineAccess = true, // This allows the client to request a refresh token.
                 AllowedScopes = {"openid", "profile", "auctionApp"}, // open id and profile are here because they're in IdentityResource[].
                 AccessTokenLifetime = 3600*24*30, // 30 days
+                AlwaysIncludeUserClaimsInIdToken = true, // This will include the user claims in the id token.
             }
         };
 }
